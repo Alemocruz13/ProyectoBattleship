@@ -1,6 +1,6 @@
 ﻿namespace ProyectoBattleship
 {
-    partial class Form1
+    partial class Tablero
     {
         /// <summary>
         ///  Required designer variable.
@@ -28,10 +28,17 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Text = "Form1";
+            SuspendLayout();
+            // 
+            // Tablero
+            // 
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = SystemColors.ActiveBorder;
+            ClientSize = new Size(1332, 753);
+            Name = "Tablero";
+            Text = "Form1";
+            ResumeLayout(false);
         }
 
         #endregion
