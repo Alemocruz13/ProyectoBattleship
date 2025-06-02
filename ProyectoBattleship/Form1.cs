@@ -2,12 +2,14 @@ namespace ProyectoBattleship
 {
     public partial class Tablero : Form
     {
-        // Variables para colocar barcos
-        private int barcoActual = 0;
-        private int[] barcos = new int[] { 5, 4, 3, 3, 2 };
-        private string direccion = "horizontal";
-        private bool[,] tableroAliado = new bool[10, 10];
-        private Button[,] botonesAliados = new Button[10, 10];
+        private int indiceBarcoActual = 0;
+        private int[] tamaniosBarcos = new int[] { 5, 4, 3, 3, 2 };
+        private string orientacionBarco = "horizontal";
+        private bool[,] celdasOcupadasAliado = new bool[10, 10];
+        private Button[,] botonesTableroAliado = new Button[10, 10];
+
+        private int? ultimaFilaHover = null;
+        private int? ultimaColumnaHover = null;
 
         public Tablero()
         {
@@ -19,7 +21,7 @@ namespace ProyectoBattleship
         void GenerarTableroAliado()
         {
             int filas = 10, columnas = 10;
-            FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
+            FlowLayoutPanel panelAliado = new FlowLayoutPanel
             {
                 Size = new Size(400, 400),
                 BackColor = Color.Black,
@@ -27,59 +29,65 @@ namespace ProyectoBattleship
                 Margin = new Padding(0)
             };
 
-            for (int i = 0; i < filas; i++)
+            for (int fila = 0; fila < filas; fila++)
             {
-                for (int j = 0; j < columnas; j++)
+                for (int columna = 0; columna < columnas; columna++)
                 {
-                    int fi = i;
-                    int fj = j;
+                    int filaActual = fila;
+                    int columnaActual = columna;
 
-                    Button button = CrearBoton($"btnA_{fi}_{fj}");
-                    button.Tag = (fi, fj);
+                    Button boton = CrearBoton($"btnA_{filaActual}_{columnaActual}");
+                    boton.Tag = (filaActual, columnaActual);
 
-                    button.MouseEnter += (sender, e) =>
+                    boton.MouseEnter += (sender, e) =>
                     {
-                        if (barcoActual >= barcos.Length) return;
+                        if (indiceBarcoActual >= tamaniosBarcos.Length) return;
 
-                        int tamaño = barcos[barcoActual];
-                        if (CabeElBarco(fi, fj, tamaño, direccion))
+                        ultimaFilaHover = filaActual;
+                        ultimaColumnaHover = columnaActual;
+
+                        int tamanio = tamaniosBarcos[indiceBarcoActual];
+                        if (CabeElBarco(filaActual, columnaActual, tamanio, orientacionBarco))
                         {
-                            for (int k = 0; k < tamaño; k++)
+                            for (int k = 0; k < tamanio; k++)
                             {
-                                int f = fi + (direccion == "vertical" ? k : 0);
-                                int c = fj + (direccion == "horizontal" ? k : 0);
+                                int f = filaActual + (orientacionBarco == "vertical" ? k : 0);
+                                int c = columnaActual + (orientacionBarco == "horizontal" ? k : 0);
 
-                                if (!tableroAliado[f, c])
-                                    botonesAliados[f, c].BackColor = Color.LightGreen;
+                                if (!celdasOcupadasAliado[f, c])
+                                    botonesTableroAliado[f, c].BackColor = Color.LightGreen;
                             }
                         }
                     };
 
-                    button.MouseLeave += (sender, e) =>
+                    boton.MouseLeave += (sender, e) =>
                     {
-                        if (barcoActual >= barcos.Length) return;
+                        if (indiceBarcoActual >= tamaniosBarcos.Length) return;
 
-                        int tamaño = barcos[barcoActual];
-                        if (CabeElBarco(fi, fj, tamaño, direccion))
+                        int tamanio = tamaniosBarcos[indiceBarcoActual];
+                        if (CabeElBarco(filaActual, columnaActual, tamanio, orientacionBarco))
                         {
-                            for (int k = 0; k < tamaño; k++)
+                            for (int k = 0; k < tamanio; k++)
                             {
-                                int f = fi + (direccion == "vertical" ? k : 0);
-                                int c = fj + (direccion == "horizontal" ? k : 0);
+                                int f = filaActual + (orientacionBarco == "vertical" ? k : 0);
+                                int c = columnaActual + (orientacionBarco == "horizontal" ? k : 0);
 
-                                if (!tableroAliado[f, c])
-                                    botonesAliados[f, c].BackColor = Color.Black;
+                                if (!celdasOcupadasAliado[f, c])
+                                    botonesTableroAliado[f, c].BackColor = Color.Black;
                             }
                         }
+
+                        ultimaFilaHover = null;
+                        ultimaColumnaHover = null;
                     };
 
-                    button.Click += ColocarBarcos_Click;
+                    boton.Click += ColocarBarco_Click;
 
-                    flowLayoutPanel.Controls.Add(button);
-                    botonesAliados[fi, fj] = button;
+                    panelAliado.Controls.Add(boton);
+                    botonesTableroAliado[filaActual, columnaActual] = boton;
                 }
             }
-            this.Controls.Add(flowLayoutPanel);
+            this.Controls.Add(panelAliado);
         }
 
         void GenerarTableroEnemigo()
@@ -87,7 +95,7 @@ namespace ProyectoBattleship
             Image imagenHover = Image.FromFile("resources/Target.png");
 
             int filas = 10, columnas = 10;
-            FlowLayoutPanel flowLayoutPanel = new FlowLayoutPanel
+            FlowLayoutPanel panelEnemigo = new FlowLayoutPanel
             {
                 Size = new Size(400, 400),
                 BackColor = Color.Black,
@@ -95,29 +103,29 @@ namespace ProyectoBattleship
                 Margin = new Padding(0)
             };
 
-            for (int i = 0; i < filas; i++)
+            for (int fila = 0; fila < filas; fila++)
             {
-                for (int j = 0; j < columnas; j++)
+                for (int columna = 0; columna < columnas; columna++)
                 {
-                    Button button = CrearBoton($"btnE_{i}_{j}");
-                    button.Tag = (i, j);
-                    button.Click += ButtonEnemigo_Click;
+                    Button boton = CrearBoton($"btnE_{fila}_{columna}");
+                    boton.Tag = (fila, columna);
+                    boton.Click += DispararEnemigo_Click;
 
-                    button.MouseEnter += (sender, e) =>
+                    boton.MouseEnter += (sender, e) =>
                     {
                         ((Button)sender).BackgroundImage = imagenHover;
                         ((Button)sender).BackgroundImageLayout = ImageLayout.Stretch;
                     };
 
-                    button.MouseLeave += (sender, e) =>
+                    boton.MouseLeave += (sender, e) =>
                     {
                         ((Button)sender).BackgroundImage = null;
                     };
 
-                    flowLayoutPanel.Controls.Add(button);
+                    panelEnemigo.Controls.Add(boton);
                 }
             }
-            this.Controls.Add(flowLayoutPanel);
+            this.Controls.Add(panelEnemigo);
         }
 
         Button CrearBoton(string nombre)
@@ -130,15 +138,15 @@ namespace ProyectoBattleship
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.Black,
                 FlatAppearance =
-                {
-                    BorderSize = 1,
-                    BorderColor = Color.DarkGreen,
-                },
+                        {
+                            BorderSize = 1,
+                            BorderColor = Color.DarkGreen,
+                        },
                 UseVisualStyleBackColor = false
             };
         }
 
-        private void ButtonEnemigo_Click(object sender, EventArgs e)
+        private void DispararEnemigo_Click(object sender, EventArgs e)
         {
             Button boton = sender as Button;
             var (fila, columna) = ((int, int))boton.Tag;
@@ -149,9 +157,9 @@ namespace ProyectoBattleship
             boton.Enabled = false;
         }
 
-        private void ColocarBarcos_Click(object sender, EventArgs e)
+        private void ColocarBarco_Click(object sender, EventArgs e)
         {
-            if (barcoActual >= barcos.Length)
+            if (indiceBarcoActual >= tamaniosBarcos.Length)
             {
                 MessageBox.Show("¡Ya colocaste todos los barcos!");
                 return;
@@ -159,35 +167,35 @@ namespace ProyectoBattleship
 
             Button boton = sender as Button;
             var (fila, columna) = ((int, int))boton.Tag;
-            int tamaño = barcos[barcoActual];
+            int tamanio = tamaniosBarcos[indiceBarcoActual];
 
-            if (!CabeElBarco(fila, columna, tamaño, direccion))
+            if (!CabeElBarco(fila, columna, tamanio, orientacionBarco))
             {
                 MessageBox.Show("No se puede colocar aquí.");
                 return;
             }
 
-            for (int k = 0; k < tamaño; k++)
+            for (int k = 0; k < tamanio; k++)
             {
-                int f = fila + (direccion == "vertical" ? k : 0);
-                int c = columna + (direccion == "horizontal" ? k : 0);
+                int f = fila + (orientacionBarco == "vertical" ? k : 0);
+                int c = columna + (orientacionBarco == "horizontal" ? k : 0);
 
-                tableroAliado[f, c] = true;
-                botonesAliados[f, c].BackColor = Color.LimeGreen;
-                botonesAliados[f, c].Enabled = false;
+                celdasOcupadasAliado[f, c] = true;
+                botonesTableroAliado[f, c].BackColor = Color.LimeGreen;
+                botonesTableroAliado[f, c].Enabled = false;
             }
 
-            barcoActual++;
+            indiceBarcoActual++;
         }
 
-        private bool CabeElBarco(int fila, int columna, int tamaño, string direccion)
+        private bool CabeElBarco(int fila, int columna, int tamanio, string orientacion)
         {
-            for (int k = 0; k < tamaño; k++)
+            for (int k = 0; k < tamanio; k++)
             {
-                int f = fila + (direccion == "vertical" ? k : 0);
-                int c = columna + (direccion == "horizontal" ? k : 0);
+                int f = fila + (orientacion == "vertical" ? k : 0);
+                int c = columna + (orientacion == "horizontal" ? k : 0);
 
-                if (f >= 10 || c >= 10 || tableroAliado[f, c]) return false;
+                if (f >= 10 || c >= 10 || celdasOcupadasAliado[f, c]) return false;
             }
             return true;
         }
@@ -196,8 +204,37 @@ namespace ProyectoBattleship
         {
             if (keyData == Keys.R)
             {
-                direccion = direccion == "horizontal" ? "vertical" : "horizontal";
-                MessageBox.Show($"Dirección actual: {direccion}");
+                orientacionBarco = orientacionBarco == "horizontal" ? "vertical" : "horizontal";
+
+                for (int fila = 0; fila < 10; fila++)
+                {
+                    for (int columna = 0; columna < 10; columna++)
+                    {
+                        if (!celdasOcupadasAliado[fila, columna])
+                        {
+                            botonesTableroAliado[fila, columna].BackColor = Color.Black;
+                        }
+                    }
+                }
+
+                if (ultimaFilaHover.HasValue && ultimaColumnaHover.HasValue && indiceBarcoActual < tamaniosBarcos.Length)
+                {
+                    int fila = ultimaFilaHover.Value;
+                    int columna = ultimaColumnaHover.Value;
+                    int tamanio = tamaniosBarcos[indiceBarcoActual];
+                    if (CabeElBarco(fila, columna, tamanio, orientacionBarco))
+                    {
+                        for (int k = 0; k < tamanio; k++)
+                        {
+                            int f = fila + (orientacionBarco == "vertical" ? k : 0);
+                            int c = columna + (orientacionBarco == "horizontal" ? k : 0);
+
+                            if (!celdasOcupadasAliado[f, c])
+                                botonesTableroAliado[f, c].BackColor = Color.LightGreen;
+                        }
+                    }
+                }
+
                 return true;
             }
             return base.ProcessCmdKey(ref msg, keyData);
