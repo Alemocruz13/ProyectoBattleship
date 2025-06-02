@@ -11,11 +11,15 @@ namespace ProyectoBattleship
         private int? ultimaFilaHover = null;
         private int? ultimaColumnaHover = null;
 
+        bool[,] tableroEnemigo = new bool[10, 10];
+        Random random = new Random();
+
         public Tablero()
         {
             InitializeComponent();
             GenerarTableroAliado();
             GenerarTableroEnemigo();
+            ColocarBarcosEnemigo();
         }
 
         void GenerarTableroAliado()
@@ -127,6 +131,46 @@ namespace ProyectoBattleship
             }
             this.Controls.Add(panelEnemigo);
         }
+        private void ColocarBarcosEnemigo()
+        {
+            int[] barcos = new int[] { 5, 4, 3, 3, 2 };
+
+            foreach (int tamaño in barcos)
+            {
+                bool colocado = false;
+                while (!colocado)
+                {
+                    int fila = random.Next(0, 10);
+                    int columna = random.Next(0, 10);
+                    string direccion = random.Next(0, 2) == 0 ? "horizontal" : "vertical";
+
+                    if (CabeElBarcoEnemigo(fila, columna, tamaño, direccion))
+                    {
+                        for (int k = 0; k < tamaño; k++)
+                        {
+                            int f = fila + (direccion == "vertical" ? k : 0);
+                            int c = columna + (direccion == "horizontal" ? k : 0);
+                            tableroEnemigo[f, c] = true;
+                        }
+                        colocado = true;
+                    }
+                }
+            }
+        }
+
+        private bool CabeElBarcoEnemigo(int fila, int columna, int tamaño, string direccion)
+        {
+            for (int k = 0; k < tamaño; k++)
+            {
+                int f = fila + (direccion == "vertical" ? k : 0);
+                int c = columna + (direccion == "horizontal" ? k : 0);
+
+                if (f >= 10 || c >= 10 || tableroEnemigo[f, c])
+                    return false;
+            }
+            return true;
+        }
+
 
         Button CrearBoton(string nombre)
         {
