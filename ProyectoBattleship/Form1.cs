@@ -11,7 +11,14 @@ namespace ProyectoBattleship
         private int? ultimaFilaHover = null;
         private int? ultimaColumnaHover = null;
 
-        bool[,] tableroEnemigo = new bool[10, 10];
+        private bool[,] tableroEnemigo = new bool[10, 10];
+        private Button[,] botonesTableroEnemigo = new Button[10, 10];
+        private bool[,] celdasDisparadasUsuario = new bool[10, 10];
+        private bool[,] celdasDisparadasCPU = new bool[10, 10];
+
+        private bool juegoIniciado = false;
+        private bool turnoUsuario;
+
         Random random = new Random();
 
         public Tablero()
@@ -127,10 +134,12 @@ namespace ProyectoBattleship
                     };
 
                     panelEnemigo.Controls.Add(boton);
+                    botonesTableroEnemigo[fila, columna] = boton;
                 }
             }
             this.Controls.Add(panelEnemigo);
         }
+
         private void ColocarBarcosEnemigo()
         {
             int[] barcos = new int[] { 5, 4, 3, 3, 2 };
@@ -171,7 +180,6 @@ namespace ProyectoBattleship
             return true;
         }
 
-
         Button CrearBoton(string nombre)
         {
             return new Button
@@ -182,30 +190,77 @@ namespace ProyectoBattleship
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.Black,
                 FlatAppearance =
-                        {
-                            BorderSize = 1,
-                            BorderColor = Color.DarkGreen,
-                        },
+                            {
+                                BorderSize = 1,
+                                BorderColor = Color.DarkGreen,
+                            },
                 UseVisualStyleBackColor = false
             };
         }
 
         private void DispararEnemigo_Click(object sender, EventArgs e)
         {
+            if (!juegoIniciado || !turnoUsuario)
+                return;
+
             Button boton = sender as Button;
             var (fila, columna) = ((int, int))boton.Tag;
 
-            MessageBox.Show($"Disparo en ({fila}, {columna})");
+            if (celdasDisparadasUsuario[fila, columna])
+                return;
 
-            boton.BackColor = Color.Red;
+            celdasDisparadasUsuario[fila, columna] = true;
+
+            if (tableroEnemigo[fila, columna])
+            {
+                boton.BackColor = Color.Red;
+                boton.FlatAppearance.BorderColor = Color.Red;
+            }
+            else
+            {
+                boton.BackColor = Color.FromArgb(40, 40, 40);
+            }
             boton.Enabled = false;
+
+            turnoUsuario = false;
+            DisparoCPU();
+        }
+
+        private void DisparoCPU()
+        {
+            Task.Delay(500).ContinueWith(_ =>
+            {
+                int fila, columna;
+                do
+                {
+                    fila = random.Next(0, 10);
+                    columna = random.Next(0, 10);
+                } while (celdasDisparadasCPU[fila, columna]);
+
+                celdasDisparadasCPU[fila, columna] = true;
+
+                this.Invoke(() =>
+                {
+                    if (celdasOcupadasAliado[fila, columna])
+                    {
+                        botonesTableroAliado[fila, columna].BackColor = Color.Red;
+                        botonesTableroAliado[fila, columna].FlatAppearance.BorderColor = Color.Red;
+                    }
+                    else
+                    {
+                        botonesTableroAliado[fila, columna].BackColor = Color.FromArgb(40, 40, 40);
+                    }
+                    botonesTableroAliado[fila, columna].Enabled = false;
+
+                    turnoUsuario = true;
+                });
+            });
         }
 
         private void ColocarBarco_Click(object sender, EventArgs e)
         {
             if (indiceBarcoActual >= tamaniosBarcos.Length)
             {
-                MessageBox.Show("¡Ya colocaste todos los barcos!");
                 return;
             }
 
@@ -226,10 +281,29 @@ namespace ProyectoBattleship
 
                 celdasOcupadasAliado[f, c] = true;
                 botonesTableroAliado[f, c].BackColor = Color.LimeGreen;
+                botonesTableroAliado[f, c].FlatAppearance.BorderColor = Color.LimeGreen;
                 botonesTableroAliado[f, c].Enabled = false;
             }
 
             indiceBarcoActual++;
+
+            if (indiceBarcoActual >= tamaniosBarcos.Length)
+            {
+                for (int filaBotones = 0; filaBotones < 10; filaBotones++)
+                {
+                    for (int columnaBotones = 0; columnaBotones < 10; columnaBotones++)
+                    {
+                        botonesTableroAliado[filaBotones, columnaBotones].Enabled = false;
+                    }
+                }
+                juegoIniciado = true;
+                turnoUsuario = random.Next(0, 2) == 0;
+                MessageBox.Show(turnoUsuario ? "¡Tu turno primero!" : "¡La CPU comienza!");
+                if (!turnoUsuario)
+                {
+                    DisparoCPU();
+                }
+            }
         }
 
         private bool CabeElBarco(int fila, int columna, int tamanio, string orientacion)
